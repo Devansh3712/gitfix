@@ -18,4 +18,4 @@ Input will follow the following format:
 ```
 
 [OUTPUT FORMAT]
-Output only the git commands required for the desired output. Nothing else other than git commands should be in your response.
+Output only the git commands required for the desired output. If there are multiple commands, delimit them using a newline. Nothing else other than git commands should be present in your response.

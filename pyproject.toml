@@ -12,7 +12,10 @@ bs4 = "^0.0.2"
 lxml = "^5.2.2"
 chromadb = "^0.5.3"
 python-dotenv = "^1.0.1"
+rich = "^13.7.1"
 
+[tool.poetry.scripts]
+gitfix = "gitfix.main:main"
 
 [build-system]
 requires = ["poetry-core"]
