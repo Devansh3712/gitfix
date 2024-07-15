@@ -1,12 +1,16 @@
 import argparse
+import json
 import os
+import subprocess
+import webbrowser
 
 import httpx
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.text import Text
+from simple_term_menu import TerminalMenu
 
-from gitfix.rag import VectorDatabase
+from gitfix.schemas import Response
 
 home_directory = os.path.expanduser("~")
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -32,16 +36,13 @@ def update_config() -> None:
             exit(0)
 
 
-def get_llm_response(log: str, context: str | None):
-    db = VectorDatabase()
-    documentation = db.get_related_documentation(log)
-
+def get_llm_response(log: str, context: str | None) -> Response:
     with open(os.path.join(current_directory, "system_prompt.txt")) as infile:
         system_prompt = infile.read()
 
     with open(os.path.join(current_directory, "user_prompt.txt")) as infile:
         user_prompt = infile.read()
-    user_prompt = user_prompt.format(log=log, documentation=documentation[0][0])
+    user_prompt = user_prompt.format(log=log)
 
     if context is not None:
         user_prompt += f"\n[USER CONTEXT]\n{context}"
@@ -55,17 +56,20 @@ def get_llm_response(log: str, context: str | None):
                 {"role": "user", "content": user_prompt},
             ],
             "model": "llama3-70b-8192",
+            "response_format": {"type": "json_object"},
         },
     )
     if response.status_code != 200:
         raise
+
     data = response.json()
-    return data["choices"][0]["message"]["content"]
+    result = data["choices"][0]["message"]["content"]
+    suggestions = json.loads(result)
+    return Response(**suggestions)
 
 
 def main():
     update_config()
-    VectorDatabase().initialize_collection()
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -86,4 +90,34 @@ def main():
         spinner_style="white",
     ):
         result = get_llm_response(log, args.context)
-    print(result)
+
+    def get_preview(entry: str) -> str | None:
+        suggestion = result.suggestions[entry]
+        explanation = suggestion.explanation
+
+        match suggestion.type_:
+            case "command":
+                command = suggestion.command
+                return f"{command}\n\n{explanation}"
+            case _:
+                return explanation
+
+    terminal_menu = TerminalMenu(
+        menu_entries=list(result.suggestions.keys()),
+        preview_command=get_preview,
+        preview_title="Explanation",
+        preview_size=0.75,
+    )
+    terminal_menu.show()
+
+    entry = terminal_menu.chosen_menu_entry
+    suggestion = result.suggestions[entry]
+
+    match suggestion.type_:
+        case "command":
+            command_args = suggestion.command.split(" ")
+            subprocess.run(command_args)
+        case "documentation":
+            webbrowser.open_new_tab(suggestion.url)
+        case _:
+            pass
