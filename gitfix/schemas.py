@@ -1,12 +1,17 @@
-from typing import Literal, Union
+from enum import Enum
+from typing import Union
 
 from pydantic import BaseModel, Field
 
-types = Literal["command", "documentation", "other"]
+
+class Type(str, Enum):
+    COMMAND = "command"
+    DOCUMENTATION = "documentation"
+    OTHER = "other"
 
 
 class Suggestion(BaseModel):
-    type_: types = Field(alias="type")
+    type_: Type = Field(alias="type")
     explanation: str | None = None
 
 

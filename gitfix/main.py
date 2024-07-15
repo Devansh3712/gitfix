@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.text import Text
 from simple_term_menu import TerminalMenu
 
-from gitfix.schemas import Response
+from gitfix.schemas import Response, Type
 
 home_directory = os.path.expanduser("~")
 current_directory = os.path.dirname(os.path.realpath(__file__))
@@ -40,9 +40,7 @@ def get_llm_response(log: str, context: str | None) -> Response:
     with open(os.path.join(current_directory, "system_prompt.txt")) as infile:
         system_prompt = infile.read()
 
-    with open(os.path.join(current_directory, "user_prompt.txt")) as infile:
-        user_prompt = infile.read()
-    user_prompt = user_prompt.format(log=log)
+    user_prompt = f"[COMMAND OUTPUT]\n{log}\n"
 
     if context is not None:
         user_prompt += f"\n[USER CONTEXT]\n{context}"
@@ -85,39 +83,48 @@ def main():
         log = infile.read()
 
     with console.status(
-        "Fetching commands",
+        "Fetching suggestions",
         spinner="dots",
         spinner_style="white",
     ):
         result = get_llm_response(log, args.context)
 
-    def get_preview(entry: str) -> str | None:
-        suggestion = result.suggestions[entry]
+    def get_preview(selected: str) -> str | None:
+        if selected == "Exit":
+            return None
+
+        suggestion = result.suggestions[selected]
         explanation = suggestion.explanation
 
         match suggestion.type_:
-            case "command":
+            case Type.COMMAND:
                 command = suggestion.command
                 return f"{command}\n\n{explanation}"
             case _:
                 return explanation
 
-    terminal_menu = TerminalMenu(
-        menu_entries=list(result.suggestions.keys()),
-        preview_command=get_preview,
-        preview_title="Explanation",
-        preview_size=0.75,
-    )
-    terminal_menu.show()
+    while True:
+        suggestions = list(result.suggestions.keys()) + ["Exit"]
+        terminal_menu = TerminalMenu(
+            menu_entries=suggestions,
+            preview_command=get_preview,
+            preview_title="Explanation",
+            preview_size=0.75,
+        )
+        terminal_menu.show()
 
-    entry = terminal_menu.chosen_menu_entry
-    suggestion = result.suggestions[entry]
+        entry = terminal_menu.chosen_menu_entry
+        if entry == "Exit":
+            exit(0)
 
-    match suggestion.type_:
-        case "command":
-            command_args = suggestion.command.split(" ")
-            subprocess.run(command_args)
-        case "documentation":
-            webbrowser.open_new_tab(suggestion.url)
-        case _:
-            pass
+        suggestion = result.suggestions[entry]
+        match suggestion.type_:
+            case Type.COMMAND:
+                command_args = suggestion.command.split(" ")
+                subprocess.run(command_args)
+            case Type.DOCUMENTATION:
+                webbrowser.open_new_tab(suggestion.url)
+            case _:
+                pass
+
+        result.suggestions.pop(entry)
