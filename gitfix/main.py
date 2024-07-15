@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import httpx
@@ -31,7 +32,7 @@ def update_config() -> None:
             exit(0)
 
 
-def get_llm_response(log: str):
+def get_llm_response(log: str, context: str | None):
     db = VectorDatabase()
     documentation = db.get_related_documentation(log)
 
@@ -41,6 +42,9 @@ def get_llm_response(log: str):
     with open(os.path.join(current_directory, "user_prompt.txt")) as infile:
         user_prompt = infile.read()
     user_prompt = user_prompt.format(log=log, documentation=documentation[0][0])
+
+    if context is not None:
+        user_prompt += f"\n[USER CONTEXT]\n{context}"
 
     response = httpx.post(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -63,6 +67,16 @@ def main():
     update_config()
     VectorDatabase().initialize_collection()
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--context",
+        type=str,
+        help="additional user context",
+        required=False,
+    )
+    args = parser.parse_args()
+
     with open(os.path.join(home_directory, ".gitfix", "git.log")) as infile:
         log = infile.read()
 
@@ -71,5 +85,5 @@ def main():
         spinner="dots",
         spinner_style="white",
     ):
-        result = get_llm_response(log)
+        result = get_llm_response(log, args.context)
     print(result)
