@@ -6,6 +6,9 @@ import webbrowser
 
 import httpx
 from dotenv import load_dotenv
+from pygments import highlight
+from pygments.lexers import BashLexer
+from pygments.formatters import TerminalFormatter
 from rich.console import Console
 from rich.text import Text
 from simple_term_menu import TerminalMenu
@@ -98,10 +101,14 @@ def main():
 
         match suggestion.type_:
             case Type.COMMAND:
-                command = suggestion.command
-                return f"{command}\n\n{explanation}"
+                command = highlight(
+                    suggestion.command, BashLexer(), TerminalFormatter()
+                )
+                return f"{command}\n{explanation}"
             case _:
                 return explanation
+
+    console.print(f"[bold] {result.error}\n")
 
     while True:
         suggestions = list(result.suggestions.keys()) + ["Exit"]
@@ -110,6 +117,8 @@ def main():
             preview_command=get_preview,
             preview_title="Explanation",
             preview_size=0.75,
+            menu_cursor="➤ ",
+            menu_cursor_style=("fg_purple",),
         )
         terminal_menu.show()
 
@@ -122,9 +131,8 @@ def main():
             case Type.COMMAND:
                 command_args = suggestion.command.split(" ")
                 subprocess.run(command_args)
+                result.suggestions.pop(entry)
             case Type.DOCUMENTATION:
                 webbrowser.open_new_tab(suggestion.url)
             case _:
                 pass
-
-        result.suggestions.pop(entry)

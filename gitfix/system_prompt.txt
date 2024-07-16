@@ -17,31 +17,13 @@ You will provided the output of the last git command executed by a user. You mig
 ```
 
 [OUTPUT FORMAT]
-The output should be strictly in the following JSON format:
+The output should be strictly in the following JSON format, which can be parsed by any JSON library:
 
 ```json
-{
-	"error": "Explanation of error in simple terms",
-	"suggestions": {
-		"suggestion 1": {
-			"type": "command",
-			"command": "suggested command",
-			"explanation": "explanation for suggestion"
-		},
-		"suggestion 2": {
-			"type": "documentation",
-			"url": "link to documentation",
-		},
-		"suggestion 3": {
-			"type": "other",
-			"explanation": "explanation for suggestion"
-		},
-		...
-	}
-}
+{"error": "Explanation of error in simple terms", "suggestions": {"suggestion 1": {"type": "command", "command": "suggested command", "explanation": "explanation for suggestion"}, "suggestion 2": {"type": "documentation", "url": "link to documentation"}, "suggestion 3": {"type": "other", "explanation": "explanation for suggestion"}}}
 ```
 
-The "type" key in the output can have values "command", "documentation" or "other". Do not include indents (\t) in your response.
+The "type" key in the output can have values "command", "documentation" or "other". The suggestions should be brief, and the explanations should be in a simple language and comprehensive.
 
 [EXAMPLES]
 
@@ -60,25 +42,7 @@ Automatic merge failed; fix conflicts and then commit the result.
 **Response**
 
 ```json
-{
-	"error": "A merge conflict occurred in file.txt because changes from different branches conflict with each other.",
-	"suggestions": {
-		"Open the file in your preferred merge tool": {
-			"type": "command",
-			"command": "git mergetool",
-			"explanation": "A merge conflict occurs when changes in the same part of a file are made in two branches. This suggestion opens a merge tool to help resolve the conflict."
-		},
-        	"See a guide on resolving merge conflicts": {
-			"type": "documentation",
-			"url": "link to documentation",
-		},
-        	"Abort the merge": {
-			"type": "command",
-			"command": "git merge --abort",
-			"explanation": "If you decide to not proceed with the merge, this command will abort it."
-		}
-	}
-}
+{"error": "A merge conflict occurred in file.txt because changes from different branches conflict with each other.", "suggestions": {"Open the file in your preferred merge tool": {"type": "command", "command": "git mergetool", "explanation": "A merge conflict occurs when changes in the same part of a file are made in two branches. This suggestion opens a merge tool to help resolve the conflict."}, "See a guide on resolving merge conflicts": {"type": "documentation", "url": "link to documentation"}, "Abort the merge": {"type": "command", "command": "git merge --abort", "explanation": "If you decide to not proceed with the merge, this command will abort it."}}}
 ```
 
 ### 2. Permission Denied
@@ -94,26 +58,5 @@ fatal: unable to access 'https://github.com/user/repo.git/': The requested URL r
 **Response**
 
 ```json
-{
-    "error": "Git was denied permission to access the repository at 'https://github.com/user/repo.git/'. This is usually due to incorrect credentials or lack of access rights.",
-    "suggestions": {
-        "Update the remote URL": {
-        	"type": "command",
-        	"command": "git remote set-url origin https://github.com/user/repo.git",
-        	"explanation": "Updating the remote URL can fix issues if the repository has been moved or renamed."
-        },
-        "Open a guide on configuring GitHub credentials": {
-        	"type": "documentation",
-        	"url": "link to documentation",
-        },
-        "Check your GitHub credentials and ensure you have the correct access rights.": {
-        	"type": "other",
-        	"explanation": "This ensures that your login credentials have the necessary permissions to access the repository."
-        },
-	"Verify the repository URL is correct and the repository exists.": {
-		"type": "other",
-		"explanation": "Double-checking the URL ensures that there are no typos and the repository exists."
-	}
-    }
-}
+{"error": "Git was denied permission to access the repository at 'https://github.com/user/repo.git/'. This is usually due to incorrect credentials or lack of access rights.", "suggestions": {"Update the remote URL": {"type": "command", "command": "git remote set-url origin https://github.com/user/repo.git", "explanation": "Updating the remote URL can fix issues if the repository has been moved or renamed."}, "Open a guide on configuring GitHub credentials": {"type": "documentation", "url": "link to documentation"}, "Check your GitHub credentials and ensure you have the correct access rights.": {"type": "other", "explanation": "This ensures that your login credentials have the necessary permissions to access the repository."}, "Verify the repository URL is correct and the repository exists.": {"type": "other", "explanation": "Double-checking the URL ensures that there are no typos and the repository exists."}}}
 ```
