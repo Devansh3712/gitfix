@@ -13,6 +13,7 @@ from rich.console import Console
 from rich.text import Text
 from simple_term_menu import TerminalMenu
 
+from gitfix.rag import VectorDB
 from gitfix.schemas import Response, Type
 
 home_directory = os.path.expanduser("~")
@@ -40,6 +41,11 @@ def update_config() -> None:
 
 
 def get_llm_response(log: str, context: str | None) -> Response:
+    db = VectorDB()
+    cache = db.get_cache(log)
+    if cache is not None:
+        return cache
+
     with open(os.path.join(current_directory, "system_prompt.txt")) as infile:
         system_prompt = infile.read()
 
@@ -66,7 +72,9 @@ def get_llm_response(log: str, context: str | None) -> Response:
     data = response.json()
     result = data["choices"][0]["message"]["content"]
     suggestions = json.loads(result)
-    return Response(**suggestions)
+    suggestions = Response(**suggestions)
+    db.add_cache(log, suggestions)
+    return suggestions
 
 
 def main():

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Type(str, Enum):
@@ -11,6 +11,8 @@ class Type(str, Enum):
 
 
 class Suggestion(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     type_: Type = Field(alias="type")
     explanation: str | None = None
 
